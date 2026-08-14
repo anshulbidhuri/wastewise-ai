@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WasteWise AI — Standalone Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* STANDALONE: API key entered via UI — for demo/hackathon only */
+</style>
+</head>
+<body>
+<script>
+// Redirect to main app if server is running
+fetch('/api/health').then(r => {
+  if (r.ok) window.location.href = '/';
+}).catch(() => {
+  // Server not running — load standalone version
+  document.body.innerHTML = '<p style="font-family:sans-serif;padding:20px;color:#ccc">Loading standalone demo...</p>';
+  const s = document.createElement('script');
+  s.src = 'standalone_app.js';
+  document.head.appendChild(s);
+});
+</script>
+</body>
+</html>
