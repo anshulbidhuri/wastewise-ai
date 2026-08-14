@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WasteWise AI — Municipal Waste Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ─── RESET & VARS ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#1a1d26;--bg3:#23263a;
+  --surface:#1e2130;--surface2:#252840;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#e8eaf0;--text2:#9ba3b8;--text3:#6b7280;
+  --accent:#22c55e;--accent2:#16a34a;--glow:rgba(34,197,94,0.15);
+  --blue:#3b82f6;--purple:#8b5cf6;--orange:#f59e0b;--red:#ef4444;--cyan:#06b6d4;
+  --sw:280px;--r:12px;--rs:8px;
+  --font:'Inter',system-ui,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.6}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ─── SIDEBAR ───────────────────────────────────────────── */
+.sidebar{width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;flex-shrink:0;overflow:hidden;transition:transform .2s;z-index:200}
+.sidebar-header{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),#15803d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.logo-title{font-size:16px;font-weight:700}
+.logo-sub{font-size:10px;color:var(--text3)}
+.new-chat-btn{margin:14px 12px;padding:10px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;font-family:var(--font);width:calc(100% - 24px)}
+.new-chat-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.sbar-section{padding:0 8px 8px}
+.sbar-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:10px 8px 6px}
+.suggested-prompts{display:flex;flex-direction:column;gap:2px}
+.prompt-chip{background:transparent;border:none;border-radius:var(--rs);color:var(--text2);padding:7px 10px;font-size:12px;cursor:pointer;text-align:left;transition:all .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font);width:100%}
+.prompt-chip:hover{background:var(--surface2);color:var(--text)}
+.conv-history{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.conv-item{background:transparent;border:none;border-radius:var(--rs);color:var(--text2);padding:7px 10px;font-size:12px;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font);width:100%;transition:all .2s}
+.conv-item:hover,.conv-item.active{background:var(--surface2);color:var(--text)}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.lang-sel{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg3);border-radius:var(--rs)}
+.lang-label{font-size:11px;color:var(--text3);flex:1}
+.lang-btn{padding:3px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.lang-btn:hover,.lang-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.dash-btn{padding:9px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--font);transition:all .2s;width:100%}
+.dash-btn:hover{background:var(--blue);border-color:var(--blue)}
+
+/* ─── OVERLAY ────────────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150}
+.overlay.open{display:block}
+.sidebar.open{transform:translateX(0)!important}
+
+/* ─── MAIN ───────────────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh}
+.topnav{height:52px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);gap:12px;background:var(--bg);flex-shrink:0}
+.menu-btn{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:6px;border-radius:6px;display:none;transition:background .2s}
+.menu-btn:hover{background:var(--surface2)}
+.tnav-center{flex:1;display:flex;justify-content:center}
+.agent-badge{background:var(--glow);border:1px solid rgba(34,197,94,.3);color:var(--accent);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600}
+.tnav-right{display:flex;align-items:center;gap:10px}
+.demo-tag{font-size:10px;font-weight:600;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--accent);padding:3px 8px;border-radius:4px}
+.icon-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:6px;border-radius:6px;transition:background .2s}
+.icon-btn:hover{background:var(--surface2)}
+
+/* ─── CHAT VIEW ──────────────────────────────────────────── */
+.chat-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.welcome-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;overflow-y:auto}
+.wlc-icon{font-size:52px;margin-bottom:16px;filter:drop-shadow(0 0 20px var(--accent))}
+.wlc-title{font-size:32px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.wlc-sub{color:var(--text2);font-size:14px;margin-bottom:32px}
+.wlc-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:540px;width:100%;margin-bottom:24px}
+.wlc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 14px;cursor:pointer;transition:all .2s;text-align:left}
+.wlc-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-2px)}
+.wc-icon{font-size:24px;margin-bottom:8px}
+.wc-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.wc-desc{font-size:11px;color:var(--text3);line-height:1.4}
+.wlc-hint{font-size:12px;color:var(--text3);font-style:italic}
+.chat-messages{flex:1;overflow-y:auto;padding:24px 0;display:flex;flex-direction:column}
+.msg-row{display:flex;gap:14px;padding:16px 24px;transition:background .2s}
+.msg-row:hover{background:rgba(255,255,255,.02)}
+.msg-row.user{flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:2px}
+.msg-row.user .msg-avatar{background:linear-gradient(135deg,var(--blue),var(--purple))}
+.msg-row.assistant .msg-avatar{background:linear-gradient(135deg,var(--accent),#15803d)}
+.msg-bubble{max-width:680px;min-width:40px}
+.msg-row.user .msg-bubble{display:flex;flex-direction:column;align-items:flex-end}
+.msg-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--text3)}
+.msg-row.user .msg-meta{flex-direction:row-reverse}
+.msg-sender{font-weight:600;font-size:12px;color:var(--text2)}
+.msg-body{padding:12px 16px;border-radius:var(--r);font-size:14px;line-height:1.7}
+.msg-row.user .msg-body{background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(139,92,246,.2));border:1px solid rgba(59,130,246,.3);border-bottom-right-radius:4px}
+.msg-row.assistant .msg-body{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-body strong{color:#e2e8f0;font-weight:600}
+.msg-body code{background:var(--bg3);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:var(--cyan)}
+.msg-body h1,.msg-body h2,.msg-body h3{font-weight:600;margin:10px 0 6px}
+.msg-body h2{font-size:15px;color:var(--accent)}
+.msg-body h3{font-size:14px;color:var(--cyan)}
+.msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0}
+.msg-body li{margin-bottom:4px}
+.msg-body p{margin:6px 0}
+.msg-body table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+.msg-body th,.msg-body td{border:1px solid var(--border2);padding:6px 10px;text-align:left}
+.msg-body th{background:var(--bg3);color:var(--accent);font-weight:600}
+.msg-body blockquote{border-left:3px solid var(--accent);padding-left:12px;margin:8px 0;color:var(--text2)}
+.msg-body hr{border:none;border-top:1px solid var(--border);margin:10px 0}
+.msg-actions{display:flex;gap:6px;margin-top:6px;opacity:0;transition:opacity .2s}
+.msg-row:hover .msg-actions{opacity:1}
+.msg-action-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-size:11px;padding:3px 8px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.msg-action-btn:hover{background:var(--surface2);color:var(--text)}
+.agent-status{display:flex;align-items:center;gap:10px;padding:10px 24px;background:rgba(34,197,94,.05);border-top:1px solid rgba(34,197,94,.1);font-size:12px;color:var(--accent)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hidden{display:none!important}
+.chat-input-area{padding:16px 24px 20px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0}
+.input-wrapper{display:flex;align-items:flex-end;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;transition:border-color .2s}
+.input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,197,94,.08)}
+.input-icon-btn{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:2px 4px;border-radius:5px;flex-shrink:0;transition:all .2s;font-family:var(--font);line-height:1}
+.input-icon-btn:hover{color:var(--accent);background:var(--glow)}
+.input-icon-btn:disabled{opacity:.4;cursor:not-allowed}
+#sendBtn{color:var(--accent);display:flex;align-items:center;justify-content:center}
+#sendBtn:hover{background:var(--accent);color:#fff}
+#chatInput{flex:1;background:none;border:none;color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;resize:none;outline:none;max-height:150px;overflow-y:auto;padding:2px 0}
+#chatInput::placeholder{color:var(--text3)}
+.input-footer{display:flex;justify-content:space-between;padding:6px 2px 0;font-size:11px;color:var(--text3)}
+.voice-active{color:var(--red)!important;animation:pulse 1s infinite}
+.typing-indicator{display:inline-flex;align-items:center;gap:4px;padding:12px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:typing 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* ─── DASHBOARD ──────────────────────────────────────────── */
+.dash-view{flex:1;overflow-y:auto;padding:24px}
+.dash-header{margin-bottom:24px}
+.dash-header h1{font-size:24px;font-weight:700;margin-bottom:8px}
+.demo-notice{font-size:12px;color:var(--orange);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);padding:6px 12px;border-radius:6px;margin-bottom:12px}
+.close-dash-btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--font);transition:all .2s}
+.close-dash-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 16px;display:flex;flex-direction:column;gap:6px;transition:all .2s}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-icon{font-size:24px;margin-bottom:4px}
+.kpi-value{font-size:26px;font-weight:700;line-height:1}
+.kpi-value.green{color:var(--accent)} .kpi-value.blue{color:var(--blue)} .kpi-value.orange{color:var(--orange)} .kpi-value.red{color:var(--red)} .kpi-value.cyan{color:var(--cyan)}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.kpi-sub{font-size:11px;color:var(--text3)}
+.dash-tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.dash-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:8px 16px;cursor:pointer;font-size:13px;font-weight:500;font-family:var(--font);transition:all .2s;margin-bottom:-1px}
+.dash-tab:hover{color:var(--text)}
+.dash-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px}
+.dash-table th,.dash-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.dash-table th{background:var(--surface);color:var(--text3);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.06em}
+.dash-table tr:hover td{background:rgba(255,255,255,.02)}
+.prog-bar{width:80px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.prog-fill{height:100%;border-radius:3px}
+.prog-fill.green{background:var(--accent)} .prog-fill.orange{background:var(--orange)} .prog-fill.red{background:var(--red)}
+.badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;text-transform:uppercase}
+.badge.active,.badge.resolved{background:rgba(34,197,94,.15);color:var(--accent)}
+.badge.maintenance,.badge.in-progress,.badge.medium{background:rgba(245,158,11,.15);color:var(--orange)}
+.badge.breakdown,.badge.open,.badge.high{background:rgba(239,68,68,.15);color:var(--red)}
+.badge.low{background:rgba(59,130,246,.15);color:var(--blue)}
+.alert-list{display:flex;flex-direction:column;gap:10px}
+.alert-card{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--rs);border-left:3px solid}
+.alert-card.danger{background:rgba(239,68,68,.06);border-color:var(--red)}
+.alert-card.warning{background:rgba(245,158,11,.06);border-color:var(--orange)}
+.alert-card.info{background:rgba(59,130,246,.06);border-color:var(--blue)}
+.alert-icon{font-size:18px;flex-shrink:0}
+.alert-msg{font-size:13px;line-height:1.5}
+.seg-bars{display:flex;height:6px;border-radius:3px;overflow:hidden;width:120px;display:inline-flex;vertical-align:middle;margin-right:4px}
+.seg-wet{background:var(--blue)} .seg-dry{background:var(--accent)} .seg-haz{background:var(--red)} .seg-mix{background:var(--orange)}
+
+/* ─── API KEY MODAL ──────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:28px;max-width:480px;width:100%}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+.modal input{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);font-family:var(--font);font-size:13px;outline:none;margin-bottom:12px}
+.modal input:focus{border-color:var(--accent)}
+.modal-btn{width:100%;padding:11px;background:var(--accent);border:none;border-radius:var(--rs);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .2s}
+.modal-btn:hover{background:var(--accent2)}
+.modal-warn{font-size:11px;color:var(--orange);margin-top:10px;padding:8px 12px;background:rgba(245,158,11,.08);border-radius:5px}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:200}
+  .menu-btn{display:flex}
+  .wlc-cards{grid-template-columns:1fr;max-width:340px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .chat-input-area{padding:12px 16px 16px}
+  .msg-row{padding:12px 16px}
+  .dash-view{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>♻ WasteWise AI</h2>
+    <p>Enter your <strong>Groq API key</strong> to use the AI assistant.<br>
+    Get a free key at <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a></p>
+    <input type="password" id="apiKeyInput" placeholder="gsk_..." autocomplete="off"/>
+    <button class="modal-btn" id="saveKeyBtn">Start WasteWise AI →</button>
+    <div class="modal-warn">⚠ Standalone mode: API key stored in browser localStorage only. For production use, deploy with the Node.js backend (server.js).</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="logo-icon">♻</div>
+      <div>
+        <div class="logo-title">WasteWise AI</div>
+        <div class="logo-sub">Smart Waste Management</div>
+      </div>
+    </div>
+  </div>
+  <button class="new-chat-btn" id="newChatBtn">+ New Conversation</button>
+  <div class="sbar-section">
+    <div class="sbar-label">Quick Actions</div>
+    <div class="suggested-prompts">
+      <button class="prompt-chip" data-prompt="Optimize waste collection routes for Ward 5">🗺 Optimize routes for Ward 5</button>
+      <button class="prompt-chip" data-prompt="Show Ward 4 performance analytics">📊 Ward 4 analytics</button>
+      <button class="prompt-chip" data-prompt="I want to report a garbage complaint">🗑 Report garbage problem</button>
+      <button class="prompt-chip" data-prompt="Show segregation compliance across all wards">📋 Segregation compliance</button>
+      <button class="prompt-chip" data-prompt="How can I recycle plastic waste at home?">♻ Plastic recycling guide</button>
+      <button class="prompt-chip" data-prompt="Show overall city dashboard overview">📈 System overview</button>
+      <button class="prompt-chip" data-prompt="What is the garbage collection schedule?">🕐 Collection schedule</button>
+      <button class="prompt-chip" data-prompt="Show all open complaints in the city">📌 Open complaints</button>
+    </div>
+  </div>
+  <div class="sbar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+    <div class="sbar-label">Recent Chats</div>
+    <div id="convHistory" class="conv-history"></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="lang-sel">
+      <span class="lang-label">Language:</span>
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="hi">HI</button>
+      <button class="lang-btn" data-lang="gu">GU</button>
+    </div>
+    <button class="dash-btn" id="dashBtn">📊 Municipal Dashboard</button>
+    <button class="dash-btn" id="changeKeyBtn" style="background:transparent;border-color:var(--border);font-size:12px;color:var(--text3)">🔑 Change API Key</button>
+  </div>
+</aside>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- MAIN -->
+<main class="main">
+  <nav class="topnav">
+    <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    <div class="tnav-center"><span class="agent-badge" id="agentBadge">WasteWise AI</span></div>
+    <div class="tnav-right">
+      <div class="demo-tag">🟢 DEMO MODE</div>
+      <button class="icon-btn" onclick="showDashboard()" title="Dashboard">📊</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashView" class="dash-view hidden">
+    <div class="dash-header">
+      <h1>Municipal Dashboard</h1>
+      <div class="demo-notice">⚠ All data is SIMULATED for hackathon demonstration — not official government statistics.</div>
+      <button class="close-dash-btn" onclick="showChat()">← Back to Chat</button>
+    </div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-tab="wards">Ward Performance</button>
+      <button class="dash-tab" data-tab="vehicles">Vehicles</button>
+      <button class="dash-tab" data-tab="complaints">Complaints</button>
+      <button class="dash-tab" data-tab="alerts">Alerts</button>
+    </div>
+    <div id="tabWards" class="tab-content active"></div>
+    <div id="tabVehicles" class="tab-content"></div>
+    <div id="tabComplaints" class="tab-content"></div>
+    <div id="tabAlerts" class="tab-content"></div>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" class="chat-view">
+    <div id="welcomeScreen" class="welcome-screen">
+      <div class="wlc-icon">♻</div>
+      <h1 class="wlc-title">WasteWise AI</h1>
+      <p class="wlc-sub">Smart Municipal Waste Management for Gujarat</p>
+      <div class="wlc-cards">
+        <div class="wlc-card" onclick="sendPrompt('Garbage has not been collected in my area for 3 days near Maninagar')">
+          <div class="wc-icon">🗑</div>
+          <div class="wc-title">Report Complaint</div>
+          <div class="wc-desc">Register waste-related grievances</div>
+        </div>
+        <div class="wlc-card" onclick="sendPrompt('Optimize waste collection routes for Ward 7 today')">
+          <div class="wc-icon">🗺</div>
+          <div class="wc-title">Route Optimization</div>
+          <div class="wc-desc">AI-powered collection routes</div>
+        </div>
+        <div class="wlc-card" onclick="sendPrompt('Show Ward 5 analytics and performance this week')">
+          <div class="wc-icon">📊</div>
+          <div class="wc-title">Ward Analytics</div>
+          <div class="wc-desc">Performance KPIs & insights</div>
+        </div>
+        <div class="wlc-card" onclick="sendPrompt('How can I compost organic kitchen waste at home?')">
+          <div class="wc-icon">♻</div>
+          <div class="wc-title">Circular Economy</div>
+          <div class="wc-desc">Recycling & composting guide</div>
+        </div>
+      </div>
+      <p class="wlc-hint">Ask in English, हिंदी, or ગુજरાતી</p>
+    </div>
+    <div id="chatMessages" class="chat-messages hidden"></div>
+    <div id="agentStatus" class="agent-status hidden">
+      <div class="status-dot"></div>
+      <span id="statusText">Analyzing your request...</span>
+    </div>
+    <div class="chat-input-area">
+      <div class="input-wrapper">
+        <button class="input-icon-btn" id="voiceBtn" title="Voice input">🎙</button>
+        <textarea id="chatInput" placeholder="Ask about waste management, report a complaint, request analytics... (English / हिंदी / ગુજरাतী)" rows="1" maxlength="2000"></textarea>
+        <button class="input-icon-btn" id="sendBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div class="input-footer">
+        <span id="charCount">0 / 2000</span>
+        <span>WasteWise AI uses demo data — not official municipal statistics</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DEMO DATA (Simulated Gujarat Municipal Data)
+// ═══════════════════════════════════════════════════════════
+const WARDS = [
+  {id:1,name:"Ward 1 – Maninagar",zone:"East",wg:18.4,wc:17.1,seg:82,comp:12,res:9,mc:3,re:88,v:["V-01","V-02"],pop:24500,wet:48,dry:38,haz:4,mix:10},
+  {id:2,name:"Ward 2 – Navrangpura",zone:"Central",wg:22.6,wc:21.8,seg:91,comp:6,res:6,mc:1,re:95,v:["V-03","V-04"],pop:31200,wet:45,dry:42,haz:3,mix:10},
+  {id:3,name:"Ward 3 – Satellite",zone:"West",wg:26.1,wc:24.9,seg:87,comp:9,res:7,mc:2,re:91,v:["V-05","V-06"],pop:38400,wet:43,dry:44,haz:5,mix:8},
+  {id:4,name:"Ward 4 – Vatva",zone:"South-East",wg:31.2,wc:27.4,seg:58,comp:28,res:14,mc:8,re:72,v:["V-07","V-08","V-09"],pop:52100,wet:40,dry:30,haz:8,mix:22},
+  {id:5,name:"Ward 5 – Gota",zone:"North",wg:19.8,wc:18.0,seg:74,comp:18,res:11,mc:6,re:79,v:["V-10","V-11"],pop:29700,wet:46,dry:36,haz:4,mix:14},
+  {id:6,name:"Ward 6 – Bopal",zone:"West",wg:17.3,wc:16.8,seg:89,comp:7,res:7,mc:1,re:93,v:["V-12"],pop:21800,wet:47,dry:41,haz:3,mix:9},
+  {id:7,name:"Ward 7 – Naroda",zone:"North-East",wg:28.9,wc:24.6,seg:62,comp:23,res:12,mc:7,re:74,v:["V-13","V-14"],pop:45600,wet:41,dry:31,haz:7,mix:21},
+  {id:8,name:"Ward 8 – Paldi",zone:"South",wg:15.6,wc:15.2,seg:93,comp:4,res:4,mc:0,re:97,v:["V-15"],pop:18900,wet:49,dry:43,haz:3,mix:5}
+];
+const VEHICLES=[
+  {id:"V-01",type:"Compactor",cap:5,ward:1,status:"active"},{id:"V-02",type:"Auto-Tipper",cap:2,ward:1,status:"active"},
+  {id:"V-03",type:"Compactor",cap:5,ward:2,status:"active"},{id:"V-04",type:"Auto-Tipper",cap:2,ward:2,status:"maintenance"},
+  {id:"V-05",type:"Compactor",cap:7,ward:3,status:"active"},{id:"V-06",type:"Auto-Tipper",cap:2,ward:3,status:"active"},
+  {id:"V-07",type:"Compactor",cap:7,ward:4,status:"active"},{id:"V-08",type:"Compactor",cap:7,ward:4,status:"active"},{id:"V-09",type:"Auto-Tipper",cap:2,ward:4,status:"breakdown"},
+  {id:"V-10",type:"Compactor",cap:5,ward:5,status:"active"},{id:"V-11",type:"Auto-Tipper",cap:2,ward:5,status:"active"},
+  {id:"V-12",type:"Compactor",cap:5,ward:6,status:"active"},
+  {id:"V-13",type:"Compactor",cap:7,ward:7,status:"active"},{id:"V-14",type:"Auto-Tipper",cap:2,ward:7,status:"active"},
+  {id:"V-15",type:"Compactor",cap:5,ward:8,status:"active"}
+];
+const COMPLAINTS=[
+  {id:"GRV-001",type:"Missed Collection",ward:5,area:"Gota Cross Roads",pri:"High",status:"Open",date:"2026-08-12"},
+  {id:"GRV-002",type:"Overflowing Bin",ward:4,area:"Vatva GIDC Gate 2",pri:"High",status:"In Progress",date:"2026-08-13"},
+  {id:"GRV-003",type:"Illegal Dumping",ward:7,area:"Naroda Patiya Road",pri:"Medium",status:"Open",date:"2026-08-11"},
+  {id:"GRV-004",type:"Missed Collection",ward:7,area:"Naroda Sector 12",pri:"High",status:"Open",date:"2026-08-13"},
+  {id:"GRV-005",type:"Street Cleanliness",ward:1,area:"Maninagar Main Road",pri:"Low",status:"Resolved",date:"2026-08-10"},
+  {id:"GRV-006",type:"Vehicle Not Arrived",ward:5,area:"Gota Flyover Area",pri:"Medium",status:"Open",date:"2026-08-14"},
+  {id:"GRV-007",type:"E-Waste",ward:3,area:"Satellite Sachin Tower",pri:"Low",status:"Resolved",date:"2026-08-09"},
+  {id:"GRV-008",type:"Overflowing Bin",ward:4,area:"Vatva Industrial Area",pri:"High",status:"Open",date:"2026-08-14"}
+];
+
+// ═══════════════════════════════════════════════════════════
+// AGENT ORCHESTRATION (Client-side)
+// ═══════════════════════════════════════════════════════════
+function detectIntent(msg){
+  const lo=msg.toLowerCase();
+  if(/route|optimiz|collection route|vehicle route/.test(lo)) return 'route_optimization';
+  if(/segregat|compliance|wet waste|dry waste|hazardous|mixed waste/.test(lo)) return 'segregation_compliance';
+  if(/ticket|complaint status|grv-/.test(lo)) return 'grievance_status';
+  if(/complain|grievan|not collect|not arriv|overflow|dump|stink|smell|garbage not|vehicle not|bin full|kacharo|kcaro|garbage problem/.test(lo)) return 'grievance';
+  if(/ward \d|performance|analytics|kpi|trend|efficiency/.test(lo)) return 'ward_analytics';
+  if(/recycle|recycling|circular|compost|reuse|biomethan|e.waste|plastic waste|recover/.test(lo)) return 'circular_economy';
+  if(/schedule|timing|when|morning|evening|collection time/.test(lo)) return 'collection_schedule';
+  if(/dashboard|overview|summary|stats|statistics|total waste|active vehicles/.test(lo)) return 'dashboard_query';
+  return 'general_conversation';
+}
+
+function detectLang(msg){
+  if(/[\u0A80-\u0AFF]/.test(msg)) return 'gu';
+  if(/[\u0900-\u097F]/.test(msg)) return 'hi';
+  return 'en';
+}
+
+function buildContext(intent, msg){
+  const wm=msg.match(/ward\s*(\d+)/i);
+  const wid=wm?parseInt(wm[1]):null;
+  const ward=wid?WARDS.find(w=>w.id===wid):null;
+  const totalCollected=WARDS.reduce((s,w)=>s+w.wc,0).toFixed(1);
+  const avgSeg=(WARDS.reduce((s,w)=>s+w.seg,0)/WARDS.length).toFixed(1);
+  const activeV=VEHICLES.filter(v=>v.status==='active').length;
+
+  if(intent==='dashboard_query'||intent==='general_conversation'){
+    return `[DEMO SYSTEM OVERVIEW – 14 August 2026]\nTotal Waste Collected: ${totalCollected} tonnes\nCity Avg Segregation: ${avgSeg}%\nActive Vehicles: ${activeV}/${VEHICLES.length}\nPending Complaints: ${COMPLAINTS.filter(c=>c.status!=='Resolved').length}\nCollection Efficiency: ${(WARDS.reduce((s,w)=>s+w.re,0)/WARDS.length).toFixed(1)}%\n\nWARDS:\n`+WARDS.map(w=>`Ward ${w.id}(${w.name}): ${w.wc}/${w.wg}t, Seg:${w.seg}%, Complaints:${w.comp}(${w.comp-w.res} open), RouteEff:${w.re}%`).join('\n');
+  }
+  if(intent==='ward_analytics'&&ward){
+    return `[DEMO WARD ${ward.id}: ${ward.name} – ${ward.zone}]\nPopulation:${ward.pop.toLocaleString()}\nWaste Generated:${ward.wg}t/day | Collected:${ward.wc}t/day\nCollection Efficiency:${((ward.wc/ward.wg)*100).toFixed(1)}%\nSegregation:${ward.seg}% (Wet:${ward.wet}% Dry:${ward.dry}% Haz:${ward.haz}% Mixed:${ward.mix}%)\nMissed Collections:${ward.mc} | Complaints:${ward.comp} (${ward.res} resolved)\nRoute Efficiency:${ward.re}% | Vehicles:${ward.v.join(',')}\n\nOPEN COMPLAINTS:\n`+COMPLAINTS.filter(c=>c.ward===ward.id&&c.status!=='Resolved').map(c=>`${c.id}: ${c.type} at ${c.area} – ${c.pri} priority`).join('\n');
+  }
+  if(intent==='ward_analytics'){
+    return '[ALL WARDS DEMO]\n'+WARDS.map(w=>`Ward ${w.id}(${w.name}): Seg:${w.seg}%, Eff:${w.re}%, Complaints:${w.comp}`).join('\n')+'\n\nLowest segregation:'+WARDS.slice().sort((a,b)=>a.seg-b.seg).slice(0,3).map(w=>`Ward ${w.id}(${w.seg}%)`).join(', ');
+  }
+  if(intent==='route_optimization'){
+    const rid=wid&&[4,5,7].includes(wid)?wid:5;
+    const r={4:{zones:['Zone A–Vatva GIDC(8.2t,MISSED)','Zone B–Vatva Market(6.1t)','Zone C–Vatva Residential(4.9t)','Zone D–School Area(3.2t)'],time:'4h20m',dist:'18.4km'},5:{zones:['Zone A–Gota Cross Roads(5.8t,MISSED)','Zone B–Gota Flyover(4.2t,MISSED)','Zone C–Gota Residential(3.9t)','Zone D–Gota Market(2.7t)'],time:'3h10m',dist:'12.6km'},7:{zones:['Zone A–Naroda Sector12(7.4t,MISSED)','Zone B–Naroda Patiya(6.8t)','Zone C–Naroda Market(5.1t)','Zone D–Naroda Residential(3.8t)'],time:'4h45m',dist:'19.8km'}};
+    const rd=r[rid];
+    return `[DEMO ROUTE DATA – Ward ${rid}]\nEst Time:${rd.time} | Distance:${rd.dist}\nZones (priority order):\n${rd.zones.map((z,i)=>`${i+1}. ${z}`).join('\n')}\nRecommendation: Prioritize MISSED zones first, then high-waste zones.`;
+  }
+  if(intent==='segregation_compliance'){
+    return '[DEMO SEGREGATION]\nCity Avg:'+avgSeg+'%\n'+WARDS.map(w=>`Ward ${w.id}(${w.name}): ${w.seg}% – Wet:${w.wet}% Dry:${w.dry}% Haz:${w.haz}% Mixed:${w.mix}%`).join('\n')+'\n\nCRITICAL (<70%):'+WARDS.filter(w=>w.seg<70).map(w=>`Ward ${w.id}(${w.seg}%)`).join(', ');
+  }
+  if(intent==='grievance'||intent==='grievance_status'){
+    return '[RECENT COMPLAINTS]\n'+COMPLAINTS.map(c=>`${c.id}: Ward ${c.ward} – ${c.type} at ${c.area} – ${c.pri} – ${c.status} – ${c.date}`).join('\n');
+  }
+  if(intent==='collection_schedule'){
+    return '[DEMO COLLECTION SCHEDULE]\nMorning:6AM–10AM (Door-to-door)\nEvening:4PM–7PM (Market/Commercial)\nSunday: Bulk waste special collection\nWet waste: Daily | Dry waste: Mon/Wed/Fri | Hazardous: Saturday\nDISRUPTIONS: V-04 in maintenance (Ward 2), V-09 breakdown (Ward 4)';
+  }
+  return '';
+}
+
+function buildSystemPrompt(intent, lang, ctx){
+  const langInst={en:'Respond in English.',hi:'हिंदी में जवाब दें।',gu:'ગુજરાતીમાં જવાબ આપો.'};
+  const agents={
+    route_optimization:'You are the Route Optimization Agent. Analyze zones, prioritize missed collections and high-waste areas, suggest optimal collection order. State clearly this is DEMO/simulated data.',
+    segregation_compliance:'You are the Segregation Compliance Agent. Identify low-compliance wards (<70%), suggest targeted awareness campaigns, recommend next actions. Mark as DEMO data.',
+    grievance:'You are the Grievance Intake Agent. Help register waste complaints. Extract: complaint type, location, ward, priority. If location missing, ask for it. Note this is a DEMO system – complaint is not actually submitted to government.',
+    grievance_status:'You are the Grievance Status Agent. Look up complaint status from provided data. Be precise about IDs and statuses.',
+    ward_analytics:'You are the Ward Analytics Agent. Provide KPIs, trends, alerts, and actionable recommendations. Highlight problems. Mark as DEMO.',
+    circular_economy:'You are the Circular Economy Assistant. Guide on recycling, composting, biomethanation, e-waste, plastic, and construction waste. Be practical.',
+    collection_schedule:'You are the Collection Schedule Agent. Provide timings, note disruptions. Mark as DEMO.',
+    dashboard_query:'You are the Dashboard Analytics Agent. Summarize city-wide KPIs clearly with numbers. Mark as DEMO data.',
+    general_conversation:'You are WasteWise AI for Gujarat municipal waste management. Help citizens and officers with all waste-related matters.'
+  };
+  return `You are WasteWise AI — a municipal solid waste management assistant for Gujarat.
+
+ROLE: ${agents[intent]||agents.general_conversation}
+LANGUAGE: ${langInst[lang]||langInst.en}
+
+RULES:
+1. Only use data from the context block — never invent municipal statistics.
+2. Always label demo data as "Demo data" or "Simulated".
+3. Never claim complaints were submitted to real government systems.
+4. Citizens: simple friendly language. Officers: professional analytical tone.
+5. Be concise. Use bullet points and structure.
+
+DATA CONTEXT:\n${ctx}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════
+const S={msgs:[],loading:false,lang:'auto',convs:JSON.parse(localStorage.getItem('ww_convs2')||'[]'),convId:null,recog:null,voiceOn:false};
+
+const $=id=>document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  const key=localStorage.getItem('ww_groq_key');
+  if(key) $('apiModal').classList.add('hidden');
+  else $('apiModal').classList.remove('hidden');
+  setupEvents();
+  renderHistory();
+  renderDashboard();
+  newConv();
+});
+
+function setupEvents(){
+  $('saveKeyBtn').onclick=()=>{
+    const k=$('apiKeyInput').value.trim();
+    if(!k||!k.startsWith('gsk_')){alert('Please enter a valid Groq API key (starts with gsk_)');return;}
+    localStorage.setItem('ww_groq_key',k);
+    $('apiModal').classList.add('hidden');
+  };
+  $('changeKeyBtn').onclick=()=>{$('apiKeyInput').value='';$('apiModal').classList.remove('hidden')};
+  $('sendBtn').onclick=handleSend;
+  $('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend()}});
+  $('chatInput').addEventListener('input',()=>{
+    $('charCount').textContent=`${$('chatInput').value.length} / 2000`;
+    autoResize($('chatInput'));
+  });
+  $('newChatBtn').onclick=newConv;
+  $('dashBtn').onclick=showDashboard;
+  $('voiceBtn').onclick=toggleVoice;
+  document.querySelectorAll('.prompt-chip').forEach(b=>b.onclick=()=>sendPrompt(b.dataset.prompt));
+  document.querySelectorAll('.lang-btn').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.lang-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');S.lang=b.dataset.lang;
+  });
+  document.querySelectorAll('.dash-tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.dash-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const n=t.dataset.tab;
+    const el=$('tab'+n.charAt(0).toUpperCase()+n.slice(1));
+    if(el) el.classList.add('active');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONVERSATION
+// ═══════════════════════════════════════════════════════════
+function newConv(){
+  S.msgs=[];S.convId=Date.now();
+  $('chatMessages').innerHTML='';
+  $('welcomeScreen').classList.remove('hidden');
+  $('chatMessages').classList.add('hidden');
+  $('agentStatus').classList.add('hidden');
+  $('agentBadge').textContent='WasteWise AI';
+  $('chatInput').value='';$('charCount').textContent='0 / 2000';
+}
+
+function saveConv(title){
+  const c={id:S.convId,title:title.slice(0,48),ts:Date.now()};
+  const i=S.convs.findIndex(x=>x.id===S.convId);
+  if(i>=0)S.convs[i]=c;else S.convs.unshift(c);
+  S.convs=S.convs.slice(0,20);
+  localStorage.setItem('ww_convs2',JSON.stringify(S.convs));
+  renderHistory();
+}
+
+function renderHistory(){
+  const c=$('convHistory');
+  c.innerHTML=S.convs.length?S.convs.map(x=>`<button class="conv-item${x.id===S.convId?' active':''}" title="${esc(x.title)}">💬 ${esc(x.title)}</button>`).join(''):'<div style="padding:8px 10px;font-size:11px;color:var(--text3)">No recent conversations</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEND / RECEIVE
+// ═══════════════════════════════════════════════════════════
+async function handleSend(){
+  const t=$('chatInput').value.trim();
+  if(!t||S.loading)return;
+  $('chatInput').value='';$('charCount').textContent='0 / 2000';autoResize($('chatInput'));
+  await sendMessage(t);
+}
+
+function sendPrompt(t){if(!S.loading)sendMessage(t);}
+
+async function sendMessage(text){
+  const key=localStorage.getItem('ww_groq_key');
+  if(!key){$('apiModal').classList.remove('hidden');return;}
+  if(!text||S.loading)return;
+  S.loading=true;setDisabled(true);
+  $('welcomeScreen').classList.add('hidden');
+  $('chatMessages').classList.remove('hidden');
+  addMsg('user',text,'You');
+  S.msgs.push({role:'user',content:text});
+
+  let apiText=text;
+  if(S.lang!=='auto'){
+    const ln={en:'[Respond in English]',hi:'[हिंदी में जवाब दें]',gu:'[ગુજરાતીમાં જવાબ આપો]'};
+    apiText=`${ln[S.lang]} ${text}`;
+  }
+
+  const intent=detectIntent(apiText);
+  const lang=S.lang==='auto'?detectLang(text):S.lang;
+  const ctx=buildContext(intent,apiText);
+  const sysPmt=buildSystemPrompt(intent,lang,ctx);
+
+  const agentNames={route_optimization:'Route Optimization Agent',segregation_compliance:'Segregation Agent',grievance:'Grievance Intake Agent',grievance_status:'Grievance Status Agent',ward_analytics:'Ward Analytics Agent',circular_economy:'Circular Economy Assistant',collection_schedule:'Schedule Agent',dashboard_query:'Dashboard Agent',general_conversation:'WasteWise AI'};
+  const agentName=agentNames[intent]||'WasteWise AI';
+  const statusMsgs={route_optimization:'Optimizing collection route...',segregation_compliance:'Analyzing segregation compliance...',grievance:'Classifying grievance...',grievance_status:'Checking complaint status...',ward_analytics:'Analyzing ward performance...',circular_economy:'Retrieving circular economy data...',collection_schedule:'Checking collection schedule...',dashboard_query:'Loading dashboard data...',general_conversation:'Processing your request...'};
+
+  $('agentStatus').classList.remove('hidden');
+  $('statusText').textContent=statusMsgs[intent]||'Analyzing...';
+  $('agentBadge').textContent=agentName;
+
+  const tid=showTyping();
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[{role:'system',content:sysPmt},...S.msgs.slice(-18,-1),{role:'user',content:apiText}],
+        temperature:0.7,max_tokens:1024,stream:false
+      })
+    });
+    const data=await res.json();
+    removeTyping(tid);$('agentStatus').classList.add('hidden');
+    if(!res.ok||data.error){
+      const e=data.error?.message||'API error. Check your Groq API key and try again.';
+      addMsg('assistant',`⚠️ ${e}`,'WasteWise AI',agentName);
+      S.msgs.push({role:'assistant',content:e});
+    }else{
+      const ai=data.choices?.[0]?.message?.content||'Could not generate response.';
+      addMsg('assistant',ai,agentName,agentName);
+      S.msgs.push({role:'assistant',content:ai});
+      saveConv(text);
+    }
+  }catch(err){
+    removeTyping(tid);$('agentStatus').classList.add('hidden');
+    const e='Network error. Check your internet connection and try again.';
+    addMsg('assistant',`⚠️ ${e}`,'WasteWise AI');
+    S.msgs.push({role:'assistant',content:e});
+  }
+  S.loading=false;setDisabled(false);$('chatInput').focus();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MESSAGE RENDERING
+// ═══════════════════════════════════════════════════════════
+function addMsg(role,content,sender,agent){
+  const cm=$('chatMessages');
+  const row=document.createElement('div');
+  row.className=`msg-row ${role}`;
+  const av=role==='user'?'👤':'♻';
+  const tm=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  row.innerHTML=`
+    <div class="msg-avatar">${av}</div>
+    <div class="msg-bubble">
+      <div class="msg-meta">
+        <span class="msg-sender">${esc(sender||role)}</span>
+        <span>${tm}</span>
+        ${agent&&role==='assistant'?`<span class="badge active" style="font-size:9px">${esc(agent)}</span>`:''}
+      </div>
+      <div class="msg-body">${mdToHtml(content)}</div>
+      ${role==='assistant'?`<div class="msg-actions">
+        <button class="msg-action-btn" onclick="cpMsg(this)">📋 Copy</button>
+        <button class="msg-action-btn" onclick="reMsg()">↺ Retry</button>
+        ${typeof speechSynthesis!=='undefined'?`<button class="msg-action-btn" onclick="spkMsg(this)">🔊 Speak</button>`:''}
+      </div>`:''}
+    </div>`;
+  cm.appendChild(row);cm.scrollTop=cm.scrollHeight;
+}
+
+function showTyping(){
+  const id=`t${Date.now()}`;
+  const r=document.createElement('div');r.id=id;r.className='msg-row assistant';
+  r.innerHTML=`<div class="msg-avatar">♻</div><div class="msg-bubble"><div class="msg-meta"><span class="msg-sender">WasteWise AI</span></div><div class="msg-body"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  $('chatMessages').appendChild(r);$('chatMessages').scrollTop=$('chatMessages').scrollHeight;
+  return id;
+}
+function removeTyping(id){const e=$(id);if(e)e.remove();}
+
+// ═══════════════════════════════════════════════════════════
+// MARKDOWN
+// ═══════════════════════════════════════════════════════════
+function mdToHtml(t){
+  if(!t)return'';
+  let h=esc(t);
+  h=h.replace(/^#### (.+)$/gm,'<h4>$1</h4>');
+  h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  h=h.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  h=h.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  h=h.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  h=h.replace(/`([^`]+)`/g,'<code>$1</code>');
+  h=h.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
+  h=h.replace(/^---+$/gm,'<hr>');
+  h=h.replace(/((?:^[•\-\*] .+\n?)+)/gm,m=>'<ul>'+m.trim().split('\n').map(l=>`<li>${l.replace(/^[•\-\*] /,'')}</li>`).join('')+'</ul>');
+  h=h.replace(/((?:^\d+\. .+\n?)+)/gm,m=>'<ol>'+m.trim().split('\n').map(l=>`<li>${l.replace(/^\d+\. /,'')}</li>`).join('')+'</ol>');
+  h=h.replace(/\n\n/g,'</p><p>');
+  h=h.replace(/\n/g,'<br>');
+  h=`<p>${h}</p>`;
+  h=h.replace(/<p><\/p>/g,'');
+  ['h1','h2','h3','h4','ul','ol','hr','blockquote'].forEach(tag=>{
+    h=h.replace(new RegExp(`<p>(<${tag}>)`,'g'),'$1');
+    h=h.replace(new RegExp(`(</${tag}>)<\/p>`,'g'),'$1');
+  });
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════
+function cpMsg(btn){
+  const b=btn.closest('.msg-bubble').querySelector('.msg-body');
+  navigator.clipboard.writeText(b.innerText).then(()=>{btn.textContent='✓ Copied';setTimeout(()=>{btn.textContent='📋 Copy'},2000)});
+}
+function reMsg(){
+  if(S.loading)return;
+  const lu=[...S.msgs].reverse().find(m=>m.role==='user');
+  if(!lu)return;
+  while(S.msgs.length&&S.msgs[S.msgs.length-1].role==='assistant')S.msgs.pop();
+  const rows=$('chatMessages').querySelectorAll('.msg-row.assistant');
+  if(rows.length)rows[rows.length-1].remove();
+  sendMessage(lu.content);
+}
+function spkMsg(btn){
+  const b=btn.closest('.msg-bubble').querySelector('.msg-body');
+  const u=new SpeechSynthesisUtterance(b.innerText);u.lang='en-IN';
+  speechSynthesis.speak(u);btn.textContent='🔇 Stop';
+  u.onend=()=>{btn.textContent='🔊 Speak'};
+  btn.onclick=()=>{speechSynthesis.cancel();btn.textContent='🔊 Speak';btn.onclick=()=>spkMsg(btn)};
+}
+
+// ═══════════════════════════════════════════════════════════
+// VOICE
+// ═══════════════════════════════════════════════════════════
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){alert('Voice requires Chrome browser.');return;}
+  if(S.voiceOn){S.recog&&S.recog.stop();S.voiceOn=false;$('voiceBtn').classList.remove('voice-active');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  S.recog=new SR();
+  const lm={en:'en-IN',hi:'hi-IN',gu:'gu-IN',auto:'en-IN'};
+  S.recog.lang=lm[S.lang]||'en-IN';S.recog.continuous=false;S.recog.interimResults=true;
+  S.recog.onstart=()=>{S.voiceOn=true;$('voiceBtn').classList.add('voice-active');$('chatInput').placeholder='Listening...'};
+  S.recog.onresult=e=>{let t='';for(let i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;$('chatInput').value=t;$('charCount').textContent=`${t.length} / 2000`;autoResize($('chatInput'))};
+  S.recog.onend=()=>{S.voiceOn=false;$('voiceBtn').classList.remove('voice-active');$('chatInput').placeholder='Ask about waste management...'};
+  S.recog.onerror=()=>{S.voiceOn=false;$('voiceBtn').classList.remove('voice-active')};
+  S.recog.start();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function showDashboard(){$('chatView').classList.add('hidden');$('dashView').classList.remove('hidden')}
+function showChat(){$('dashView').classList.add('hidden');$('chatView').classList.remove('hidden')}
+
+function renderDashboard(){
+  const totalC=WARDS.reduce((s,w)=>s+w.wc,0).toFixed(1);
+  const avgSeg=(WARDS.reduce((s,w)=>s+w.seg,0)/WARDS.length).toFixed(1);
+  const activeV=VEHICLES.filter(v=>v.status==='active').length;
+  const pending=COMPLAINTS.filter(c=>c.status!=='Resolved').length;
+  const resolved=COMPLAINTS.filter(c=>c.status==='Resolved').length;
+  const avgEff=(WARDS.reduce((s,w)=>s+w.re,0)/WARDS.length).toFixed(1);
+
+  $('kpiGrid').innerHTML=`
+    <div class="kpi-card"><div class="kpi-icon">🗑</div><div class="kpi-value green">${totalC} t</div><div class="kpi-label">Waste Collected</div><div class="kpi-sub">DEMO data</div></div>
+    <div class="kpi-card"><div class="kpi-icon">♻</div><div class="kpi-value cyan">${avgSeg}%</div><div class="kpi-label">Segregation Rate</div><div class="kpi-sub">City Average</div></div>
+    <div class="kpi-card"><div class="kpi-icon">🚛</div><div class="kpi-value blue">${activeV}/${VEHICLES.length}</div><div class="kpi-label">Active Vehicles</div><div class="kpi-sub">Fleet Status</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📋</div><div class="kpi-value orange">${pending}</div><div class="kpi-label">Pending Complaints</div><div class="kpi-sub">${resolved} resolved</div></div>
+    <div class="kpi-card"><div class="kpi-icon">⚡</div><div class="kpi-value green">${avgEff}%</div><div class="kpi-label">Route Efficiency</div><div class="kpi-sub">City Average</div></div>
+    <div class="kpi-card"><div class="kpi-icon">📅</div><div class="kpi-value" style="font-size:13px;color:var(--text2)">14 Aug 2026</div><div class="kpi-label">Data Date</div><div class="kpi-sub">Simulated</div></div>
+  `;
+
+  $('tabWards').innerHTML=`<div style="overflow-x:auto"><table class="dash-table"><thead><tr><th>Ward</th><th>Collected</th><th>Segregation</th><th>Waste Mix</th><th>Complaints</th><th>Resolution</th><th>Route Eff.</th></tr></thead><tbody>${
+    WARDS.map(w=>{
+      const eff=((w.wc/w.wg)*100).toFixed(1);
+      const rr=w.comp>0?((w.res/w.comp)*100).toFixed(0):100;
+      const sc=w.seg>=85?'green':w.seg>=70?'orange':'red';
+      return `<tr>
+        <td><strong>W${w.id}</strong><br><span style="font-size:11px;color:var(--text3)">${w.name}</span></td>
+        <td>${w.wc}/${w.wg}t<br><span style="font-size:10px;color:${eff>=90?'var(--accent)':eff>=80?'var(--orange)':'var(--red)'}">${eff}%</span></td>
+        <td><span class="prog-bar"><span class="prog-fill ${sc}" style="width:${w.seg}%"></span></span><span style="color:${w.seg>=85?'var(--accent)':w.seg>=70?'var(--orange)':'var(--red)'}">${w.seg}%</span></td>
+        <td><div class="seg-bars"><div class="seg-wet" style="width:${w.wet}%"></div><div class="seg-dry" style="width:${w.dry}%"></div><div class="seg-haz" style="width:${w.haz}%"></div><div class="seg-mix" style="width:${w.mix}%"></div></div><div style="font-size:10px;color:var(--text3)">W:${w.wet}% D:${w.dry}% H:${w.haz}% M:${w.mix}%</div></td>
+        <td>${w.comp} total<br><span style="font-size:10px;color:var(--text3)">${w.comp-w.res} open</span></td>
+        <td><span class="prog-bar"><span class="prog-fill ${rr>=80?'green':rr>=50?'orange':'red'}" style="width:${rr}%"></span></span>${rr}%</td>
+        <td><span class="prog-bar"><span class="prog-fill ${w.re>=90?'green':w.re>=75?'orange':'red'}" style="width:${w.re}%"></span></span>${w.re}%</td>
+      </tr>`;
+    }).join('')
+  }</tbody></table></div>`;
+
+  $('tabVehicles').innerHTML=`<div style="overflow-x:auto"><table class="dash-table"><thead><tr><th>Vehicle</th><th>Type</th><th>Capacity</th><th>Ward</th><th>Status</th></tr></thead><tbody>${
+    VEHICLES.map(v=>`<tr><td><strong>${v.id}</strong></td><td>${v.type}</td><td>${v.cap} t</td><td>Ward ${v.ward}</td><td><span class="badge ${v.status}">${v.status.charAt(0).toUpperCase()+v.status.slice(1)}</span></td></tr>`).join('')
+  }</tbody></table></div>`;
+
+  $('tabComplaints').innerHTML=`<div style="overflow-x:auto"><table class="dash-table"><thead><tr><th>ID</th><th>Type</th><th>Ward</th><th>Area</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead><tbody>${
+    COMPLAINTS.map(c=>`<tr><td><strong>${c.id}</strong></td><td>${c.type}</td><td>Ward ${c.ward}</td><td>${c.area}</td><td><span class="badge ${c.pri.toLowerCase()}">${c.pri}</span></td><td><span class="badge ${c.status.toLowerCase().replace(/ /g,'-')}">${c.status}</span></td><td>${c.date}</td></tr>`).join('')
+  }</tbody></table></div>`;
+
+  // Generate alerts
+  const alerts=[];
+  WARDS.forEach(w=>{
+    if(w.seg<70)alerts.push({t:'danger',m:`Ward ${w.id} (${w.name}): Low segregation compliance – ${w.seg}%`});
+    if(w.mc>=5)alerts.push({t:'danger',m:`Ward ${w.id} (${w.name}): ${w.mc} missed collections this week`});
+    if(w.comp-w.res>=10)alerts.push({t:'danger',m:`Ward ${w.id} (${w.name}): ${w.comp-w.res} unresolved complaints`});
+    if(w.re<75)alerts.push({t:'warning',m:`Ward ${w.id} (${w.name}): Route efficiency below threshold – ${w.re}%`});
+  });
+  VEHICLES.filter(v=>v.status==='breakdown').forEach(v=>alerts.push({t:'danger',m:`Vehicle ${v.id} (Ward ${v.ward}): BREAKDOWN – needs immediate attention`}));
+  VEHICLES.filter(v=>v.status==='maintenance').forEach(v=>alerts.push({t:'info',m:`Vehicle ${v.id} (Ward ${v.ward}): In maintenance`}));
+  $('tabAlerts').innerHTML=`<div class="alert-list">${alerts.map(a=>`<div class="alert-card ${a.t}"><div class="alert-icon">${a.t==='danger'?'🔴':a.t==='warning'?'🟡':'🔵'}</div><div class="alert-msg">${esc(a.m)}</div></div>`).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,150)+'px'}
+function setDisabled(d){$('sendBtn').disabled=d;$('chatInput').disabled=d}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toggleSidebar(){$('sidebar').classList.toggle('open');$('overlay').classList.toggle('open')}
+function closeSidebar(){$('sidebar').classList.remove('open');$('overlay').classList.remove('open')}
+window.sendPrompt=sendPrompt;window.showDashboard=showDashboard;window.showChat=showChat;
+window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
+window.cpMsg=cpMsg;window.reMsg=reMsg;window.spkMsg=spkMsg;
+</script>
+</body>
+</html>
